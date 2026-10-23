@@ -54,7 +54,7 @@ jobs:
         run: checkov -f main.tf -o json > checkov-results.json
 
       - name: Set up Trivy
-        uses: aquasecurity/setup-trivy@v0.2.4
+        uses: aquasecurity/setup-trivy@v0.3.1
 
       - name: Scan Terraform with Trivy
         id: trivy
