@@ -1,0 +1,11 @@
+.git
+.github
+.terraform
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.*
+tfplan
+*-results.json
+Jenkinsfile
+README.md

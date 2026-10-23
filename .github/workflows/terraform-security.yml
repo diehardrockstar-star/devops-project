@@ -1,0 +1,83 @@
+name: Terraform security checks
+
+on:
+  pull_request:
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - ".github/workflows/terraform-security.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "**.tf"
+      - "**.tfvars"
+      - ".github/workflows/terraform-security.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    name: Validate and scan Terraform
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.5.7"
+
+      - name: Check Terraform formatting
+        run: terraform fmt -check -recursive
+
+      - name: Initialize Terraform without a backend
+        run: terraform init -backend=false -input=false
+
+      - name: Validate Terraform
+        run: terraform validate
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Checkov
+        run: python -m pip install checkov
+
+      - name: Scan Terraform with Checkov
+        id: checkov
+        continue-on-error: true
+        run: checkov -f main.tf -o json > checkov-results.json
+
+      - name: Set up Trivy
+        uses: aquasecurity/setup-trivy@v0.2.4
+
+      - name: Scan Terraform with Trivy
+        id: trivy
+        continue-on-error: true
+        run: trivy config --exit-code 1 --format json --output trivy-config-results.json main.tf
+
+      - name: Upload scan reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-security-reports
+          path: |
+            checkov-results.json
+            trivy-config-results.json
+          if-no-files-found: warn
+
+      - name: Fail if a security scan found issues or failed
+        if: always()
+        env:
+          CHECKOV_OUTCOME: ${{ steps.checkov.outcome }}
+          TRIVY_OUTCOME: ${{ steps.trivy.outcome }}
+        run: |
+          if [[ "$CHECKOV_OUTCOME" != "success" || "$TRIVY_OUTCOME" != "success" ]]; then
+            echo "One or more security scans found issues or failed. Review the uploaded reports."
+            exit 1
+          fi
