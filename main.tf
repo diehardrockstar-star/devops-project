@@ -25,6 +25,12 @@ variable "allowed_ip" {
   default     = "198.51.100.1/32"
 }
 
+variable "app_instance_profile_name" {
+  type        = string
+  description = "Optional name of an existing IAM instance profile to attach to application EC2 instances"
+  default     = null
+}
+
 variable "docker_user" {
   type        = string
   description = "Docker Hub Username"
@@ -245,6 +251,14 @@ resource "aws_launch_template" "app_lt" {
   instance_type = "t3.micro"
 
   vpc_security_group_ids = [aws_security_group.app_sg.id]
+
+  dynamic "iam_instance_profile" {
+    for_each = var.app_instance_profile_name == null ? [] : [var.app_instance_profile_name]
+
+    content {
+      name = iam_instance_profile.value
+    }
+  }
 
   metadata_options {
     http_endpoint = "enabled"

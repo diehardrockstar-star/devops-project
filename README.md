@@ -29,6 +29,7 @@ Optional variables and their defaults:
 | `aws_region` | `us-east-1` | AWS region for the deployment |
 | `allowed_ip` | `198.51.100.1/32` | CIDR allowed to SSH to the EC2 instances; replace with your trusted public IP in `/32` form if SSH access is needed |
 | `database_username` | `root` | Database user supplied to the application |
+| `app_instance_profile_name` | unset | Optional name of an existing IAM instance profile to attach to the application EC2 instances |
 
 Supply values in a local `terraform.tfvars` file or pass them with `-var` options. For example:
 
@@ -42,6 +43,8 @@ allowed_ip         = "203.0.113.10/32"
 ```
 
 Use real values for your deployment, and do not commit passwords or other secrets to version control. Terraform marks `database_password` sensitive in its output, but that does not prevent it from being stored in Terraform state.
+
+To attach an IAM role to the application instances, create an IAM role and instance profile separately, then set `app_instance_profile_name` to the profile's name. This optional setting applies to the application EC2 instances in the Auto Scaling Group; it does not configure a separate Jenkins EC2 instance. Leave it unset if no application instance role is needed.
 
 ## Build the application image
 
