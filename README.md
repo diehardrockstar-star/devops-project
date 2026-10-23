@@ -77,21 +77,23 @@ Scan the Terraform configuration with Checkov
 
 From the repository root, run:
 
-checkov -f main.tf
+checkov -f main.tf -o json > checkov-results.json
 
-Checkov evaluates the Terraform configuration and reports failed checks with their rule IDs, affected resources, and remediation guidance. Review each finding against the resource in main.tf; findings to investigate include the internet-facing HTTP-only ALB and security group rules that allow public HTTP ingress.
+Checkov evaluates the Terraform configuration and writes its findings, including rule IDs and affected resources, to checkov-results.json. Review each finding against the resource in main.tf; findings to investigate include the internet-facing HTTP-only ALB and security group rules that allow public HTTP ingress.
 
 Scan infrastructure and the application image with Trivy
 
 Scan Terraform configuration for misconfigurations:
 
-trivy config .
+trivy config --format json --output trivy-config-results.json .
 
 Scan the Docker Hub image configured by docker_user, docker_image_name, and docker_image_tag for operating-system and library vulnerabilities. Replace the placeholders with the same image values you use when deploying:
 
-trivy image <docker-user>/<image-name>:<image-tag>
+trivy image --format json --output trivy-image-results.json <docker-user>/<image-name>:<image-tag>
 
-The image must be available locally or pullable from Docker Hub. Trivy results depend on the image contents and vulnerability database at scan time; this repository does not contain the application image or its source.
+The image must be available locally or pullable from Docker Hub. The Terraform and image findings are saved separately in trivy-config-results.json and trivy-image-results.json. Trivy results depend on the scanned contents and vulnerability database at scan time; this repository does not contain the application image or its source.
+
+These commands create local report files in the repository root. Review them after each scan; avoid committing reports if they contain environment-specific details.
 
 Understand and act on findings
 
@@ -114,11 +116,3 @@ The database username defaults to root, a privileged administrative account. Use
 SSH is limited by allowed_ip; replace its example default with a trusted address if SSH access is required.
 
 AWS resources can incur charges while deployed, including the ALB, EC2 instances, storage, and data transfer. Review the plan and current AWS pricing before applying, and destroy resources when they are no longer needed.
-
-Clean up
-
-From the same directory and with the same variable values used for deployment, run:
-
-terraform destroy
-
-Review the destroy plan and confirm when prompted. This removes the Terraform-managed infrastructure; it does not delete the Docker image from Docker Hub.
